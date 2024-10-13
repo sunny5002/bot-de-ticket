@@ -37,13 +37,13 @@ async def on_member_join(member):
     if channel is not None:
         embed = discord.Embed(
             title=f'Seja bem-vindo(a), {member.name}!',
-            description='Você entrou no servidor Advanced Bots!',
+            description='Você entrou no servidor!',
             color=0x0099ff
         )
         embed.set_thumbnail(url=member.avatar.url)
         embed.add_field(name='Verifique nossos produtos e entre em contato com o suporte!',
                         value='Se tiver alguma dúvida, estamos aqui para ajudar!')
-        embed.set_footer(text='Advanced Bots - todos os direitos reservados.')
+        embed.set_footer(text='todos os direitos reservados.')
 
         await channel.send(embed=embed)
  
@@ -149,222 +149,6 @@ async def on_ready():
     except Exception as e:
         print(f"Erro ao sincronizar comandos: {e}")
 
-
-
-
-
-
-    
-
-
-
-
-adm_id =1264180097573978216
-@bot.command()
-async def botao(ctx: commands.Context, *, txt: str):
-
-    # Função que será chamada ao clicar no botão de notificação
-    async def notificar_usuario(interaction: discord.Interaction, cliente: discord.Member, canal_ticket: discord.TextChannel):
-        # Verifica se o usuário que interagiu tem o cargo autorizado
-        cargo_autorizado = discord.utils.get(interaction.guild.roles, id=1287280534409576510)
-        
-        if cargo_autorizado in interaction.user.roles:
-            # Notifica o cliente (quem abriu o ticket)
-            await cliente.send(f'{cliente.mention},Seu ticket está sendo atendido agora! {canal_ticket.mention}')
-            await interaction.response.send_message('Notificação enviada ao cliente!', ephemeral=True)
-        else:
-            await interaction.response.send_message('Você não tem permissão para notificar o usuário.', ephemeral=True)
-
-    # Função que será chamada ao clicar no botão de abrir ticket
-    async def abrir_ticket_suport_or_comprar(interaction: discord.Interaction):
-        
-        categoria_ticket = discord.utils.get(interaction.guild.categories, id=1287462281961013268)
-        
-        # Cria o canal do ticket
-        canal_ticket = await interaction.guild.create_text_channel(
-            f'📂{interaction.user}', 
-            category=categoria_ticket
-        )
-        
-        # Define as permissões do canal
-        
-        
-        await canal_ticket.set_permissions(interaction.guild.default_role, view_channel=False)  # Ninguém pode ver
-        await canal_ticket.set_permissions(interaction.user, view_channel=True, send_messages=True)  # Criador pode ver
-        
-        # Permissões para administradores
-        for role in interaction.guild.roles:
-            if role.permissions.manage_channels:
-                await canal_ticket.set_permissions(role, view_channel=True)
-
-        # Embed de sucesso
-        meu_embed1 = discord.Embed(
-            title='**Ticket criado com sucesso!📌**',
-            description=f'''**{interaction.user.mention}, por favor, aguarde o atendimento. **
-
-> **• Para cancelar, clique no botão vermelho.**
-> **• Os botões cinzas são exclusivos para a equipe de suporte.**
-
-> **DESCREVA O MOTIVO DO CONTATO COM O MÁXIMO DE DETALHES POSSÍVEIS PARA FACILITAR O ATENDIMENTO.**
-
-
-''',
-            
-            color=discord.Color.from_rgb(128, 0, 128)
-        )
-        meu_embed1.set_footer(text='Advenced Bots - SUPORTE')
-
-        # Criação da view com os botões
-        view_ticket = View(timeout=None)
-
-        # Botão de cancelar ticket
-        botao_cancelar = Button(label="Cancelar Ticket", style=discord.ButtonStyle.red)
-        botao_cancelar.callback = lambda i: canal_ticket.delete()
-        view_ticket.add_item(botao_cancelar)
-
-        # Botão de notificar usuário (cinza)
-        cliente = interaction.user  # Armazena o cliente para futuras interações
-        botao_notificar = Button(label="Notificar Usuário", style=discord.ButtonStyle.grey)
-        botao_notificar.callback = lambda i: notificar_usuario(i, cliente, canal_ticket)
-        view_ticket.add_item(botao_notificar)
-
-        # Função para criar uma chamada de voz
-        async def criar_call(interaction: discord.Interaction):
-            cargo_autorizado = discord.utils.get(interaction.guild.roles, id=1287280534409576510)
-            if cargo_autorizado in interaction.user.roles:
-                canal_chamada = await interaction.guild.create_voice_channel(
-                    name=f'📞call-{interaction.user}',
-                    user_limit=2,
-                    category=categoria_ticket
-                )
-                
-                # Define permissões do canal de chamada
-                await canal_chamada.set_permissions(interaction.guild.default_role, view_channel=False)
-                await canal_chamada.set_permissions(interaction.user, view_channel=True, connect=True)
-                await canal_chamada.set_permissions(cargo_autorizado, view_channel=True, connect=True)
-
-                # Verifica se o usuário está em um canal de voz
-                if interaction.user.voice is not None:
-                    # Move o usuário para a chamada de voz
-                    await interaction.user.move_to(canal_chamada)
-                    await interaction.response.send_message(f'Você foi movido para {canal_chamada.mention}.', ephemeral=True)
-                else:
-                    await interaction.response.send_message('Você precisa estar em um canal de voz para ser movido.', ephemeral=True)
-            else:
-                await interaction.response.send_message('Você não tem permissão para criar uma chamada.', ephemeral=True)
-
-        # Botão de criar chamada de voz (verde)
-        botao_chamada = Button(label="Criar Chamada", style=discord.ButtonStyle.green)
-        botao_chamada.callback = criar_call
-        view_ticket.add_item(botao_chamada)
-
-        # Envia a mensagem no canal do ticket com os botões
-        await canal_ticket.send(embed=meu_embed1, view=view_ticket)
-        adm = interaction.guild.get_member(adm_id)  # Busca o membro pelo ID
-        if adm is not None:
-            await adm.send(f'{adm.mention}, novo ticket criado. Atenda o mais rápido possível: {canal_ticket.mention}')
-        else:
-            await interaction.response.send_message('Não foi possível encontrar o administrador para notificação.', ephemeral=True)
-        await interaction.response.send_message(f'Ticket criado: {canal_ticket.mention}', ephemeral=True)
-
-    # Botão principal para abrir o ticket
-    botao_abrir_ticket = Button(label="Suporte", style=discord.ButtonStyle.primary, emoji="🎫")
-    botao_abrir_ticket.callback = abrir_ticket_suport_or_comprar
-
-    # Criação da view principal
-    view_principal = View(timeout=None)
-    view_principal.add_item(botao_abrir_ticket)
-
-    # Embed da mensagem principal
-    meu_embed_principal = discord.Embed(
-        title='<:logo:1287461766741102703> | Advanced bots',
-        description=txt,
-        color=discord.Color.from_rgb(128, 0, 128)
-    )
-
-    # Envia a mensagem com o botão de abrir ticket
-    await ctx.send(embed=meu_embed_principal, view=view_principal)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@bot.tree.command(name='fechebk')
-async def fechebk1(interaction: Interaction, *, fechebk: str, estrelas: int):
-   
-    
-    if estrelas > 5:
-        estrelas = 5
-    estrelas_visuais = '⭐' * estrelas
-
-    canal_avalições_id = 1287502102347780147
-    canal_avaliçoes = interaction.guild.get_channel(canal_avalições_id)
-
-    if canal_avaliçoes is None:
-        await interaction.response.send_message("Canal de avaliações não encontrado!", ephemeral=True)
-        return
-
-    
-    fuso_horario = pytz.timezone('America/Sao_Paulo')
-    agora = datetime.now(fuso_horario)
-
-    
-    hora_formatada = agora.strftime('%d de %B de %Y às %H:%M')
-
-    
-    meu_embed = Embed(
-        title='Advanced bots | fechebk',
-        description=(f'''
-        > **<:pessoa:1290833690636849172> | Avaliador.**
-        >    • {interaction.user.mention}
-
-        > **💬 | O breve resumo do Avaliador.**
-        >    • `{fechebk}`
-
-        > **⭐| Estrelas**
-        >    • {estrelas_visuais}
-
-        > **⏰ | Avaliado em**
-        >    <:seta:1290833782810873929> `{hora_formatada}`
-        '''),
-        color=Color.blue()
-    )
-
-    
-    await canal_avaliçoes.send(embed=meu_embed)
-
-    
-    await interaction.response.send_message(
-        f'{interaction.user.mention}, muito obrigado por avaliar a Advanced bots! '
-        f'Confira sua avaliação no canal: {canal_avaliçoes.mention}'
-    )
-    
-
-
-
-
-
 @bot.command(name='send_dms')
 async def send_dms(ctx, message:str):
     if ctx.author.id ==1264180097573978216:
@@ -434,7 +218,7 @@ async def menu(ctx, *, mensagem: str):
 ''',
             color=discord.Color.from_rgb(128, 0, 128)
         )
-        meu_embed1.set_footer(text='Advanced Bots - SUPORTE')
+        meu_embed1.set_footer(text='SUPORTE')
 
         # Criação da view com os botões
         view_ticket = discord.ui.View(timeout=None)
@@ -553,12 +337,7 @@ async def menu(ctx, *, mensagem: str):
         description=mensagem,
         color=discord.Color.purple(),
     )
-    meu_embed.add_field(name='', value='` Advanced Bots - Suporte `')
-
-    meu_embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/1287259978599628821/1290346349430308894/Ultra_bots_2.png?ex=66fc202f&is=66faceaf&hm=e4e597cfd308db37232a03c43e2b72a31aea99a74bf5c80fd0f3cf3f3364f6fe&')
-
+    meu_embed.add_field(name='', value='`Suporte `')
     await ctx.send(embed=meu_embed, view=view)
 
-
-
-bot.run("SEU_TOKEN")
+bot.run("SEU-TOKEN")
