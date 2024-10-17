@@ -14,9 +14,8 @@ You can experience TicketBot in two ways:
 
 ### Clone the Repository:
 
-shell
-Copiar código
-git clone https://github.com/sunny5002/bot-de-ticket
+
+`git clone https://github.com/sunny5002/bot-de-ticket``
 After cloning, navigate to the project directory and run the bot using Python.
 
 ### Download the ZIP File:
